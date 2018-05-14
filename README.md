@@ -1,0 +1,3 @@
+# otaku_shakkin
+
+まゆですよぉ
