@@ -537,13 +537,29 @@ class TwitterBot:
     # リプライの特定ワードに反応するやつ
     # 引数: 反応させたい特定ワードとtext
     def word_reaction_reply(self):
+        
+        
+        # エラーを起こさせて再起動
+        if "再起動" in self.text:
+            with open("../error.log", "r") as f:
+                l = f.readlines()
+                l = str(datetime.datetime.now()) + "\n==========\n\n" + str("再起動") +"\n==========\n\n\n\n" + "".join(l)
+            with open("../error.log", "w") as f:
+                print >> f, l
+                
+            mes = "@" + self.from_id+" 再起動しました♡"
+            self.api.update_status(status=mes, in_reply_to_status_id=self.tw_id)
+                
+            # 強制エラー
+            1/0
+            return 0 # できないけど
 
         try:
 
             if "円" in self.text:
                 self.add_debt()
                 return True
-            
+           
             # 全部済 の方が優先度高い、こっちが適用されるときは済みの方にいかない
             if "全部済" in self.text:
                 self.debt_all_done()
@@ -552,12 +568,6 @@ class TwitterBot:
             if "済" in self.text:
                 self.debt_done()
                 return True
-
-
-            # エラーを起こさせて再起動
-            if "再起動" in self.text:
-                1/0
-                return True # できない
 
             # 検索
             if "検索" in self.text:
@@ -643,6 +653,12 @@ class TwitterBot:
             return False
 
         except:
-            traceback.print_exc()
+                
+            with open("../error.log", "r") as f:
+                l = f.readlines()
+                l = str(datetime.datetime.now()) + "\n==========\n\n" + str(traceback.format_exc()) +"\n==========\n\n\n\n" + "".join(l)
+            with open("../error.log", "w") as f:
+                print >> f, l
+                
             self.error_mes()
             return True
