@@ -131,6 +131,9 @@ class TwitterBot:
             self.text = self.text.replace("@"+i, "")
         self.text = re.sub(r'\s', "", self.text)
         
+        # リツイートされて回ってきたツイートかどうか
+        self.is_retweet = self.text.startswith("RT @")
+        
         # 逆登録かどうか (逆登録は、最後に「逆」しか受け付けないことにする)
         self.is_reverse = (self.text[-1:] == "逆")
         # 逆登録のときは、最後の「逆」を取り除く
@@ -316,7 +319,7 @@ class TwitterBot:
         update_row = self.df[self.df.id == done_id]
         
         # その借金の貸し借りに関わっている人しか完了できない
-        if list(update_row["borrower"] == "@"+self.from_id)[0] or list(update_row["lender"] == "@"+sef.from_id)[0]:
+        if list(update_row["borrower"] == "@"+self.from_id)[0] or list(update_row["lender"] == "@"+self.from_id)[0]:
             self.df.loc[self.df.id == done_id, "done"] = 1
             self.df.to_csv(path, encoding="utf-8", index=False)
             # print 4
@@ -324,7 +327,8 @@ class TwitterBot:
             if update_row["borrower"].item() == "@"+self.from_id:
                 mes = mes + update_row["lender"].item()+" 更新完了です！"
             else:
-                mes = mes + update_row["borrower"].itme()+" 更新完了です！"
+                mes = mes + update_row["borrower"].item()+" 更新完了です！"
+                
             self.api.update_status(status=mes, in_reply_to_status_id=self.tw_id)
             return True
         
