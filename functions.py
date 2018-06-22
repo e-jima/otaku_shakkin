@@ -1,10 +1,7 @@
 # -*- cofing: utf-8 -*-
 
-import pandas as pd
-import requests_oauthlib
 import ast
 import json
-import requests
 import datetime
 import time
 import re

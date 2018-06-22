@@ -5,17 +5,12 @@ from twitter import *
 
 
 import pandas as pd
-import requests_oauthlib
-import ast
 import json
-import requests
+import ast
 import datetime
 import time
 import re
 import random
-from PIL import Image, ImageDraw, ImageFont
-
-import shutil
 import traceback
 
 
@@ -497,7 +492,7 @@ class Mayu:
             if "差額" in self.text:
                 
                 if len(self.member) == 0:
-                    random_reply()
+                    self.random_reply()
                     return True
 
                 for mem in self.member:

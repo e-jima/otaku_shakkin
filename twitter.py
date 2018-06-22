@@ -13,19 +13,11 @@ CS = secret.CS
 AT = secret.AT
 AS = secret.AS
 
-import pandas as pd
+import requests
 import requests_oauthlib
 import ast
 import json
-import requests
 import datetime
-import time
-import re
-import random
-from PIL import Image, ImageDraw, ImageFont
-
-import shutil
-import traceback
 
 auth = requests_oauthlib.OAuth1(CK, CS, AT, AS)
 
@@ -76,7 +68,8 @@ def get_tweet_by_id(tw_id):
     
 def post_tweet(text):
     url = "https://api.twitter.com/1.1/statuses/update.json"
-    data = {"status": text+str(datetime.datetime.now())}
+    # 同じツイートの投稿規制対策で時刻を入れる
+    data = {"status": text+" "+str(datetime.datetime.now())}
     req = requests.post(url, auth=auth, data=data)
 
     return req
