@@ -14,7 +14,8 @@ import random
 import traceback
 
 
-path = "/Users/Shota/Documents/jupyter/otaku_shakkin_chang/shakkin_list/shakkin_list.csv"
+# 借金リストのパス
+path = "../shakkin_list/shakkin_list.csv"
 bot_id = "otaku_shakkin"
 
 class Mayu:
@@ -85,8 +86,21 @@ class Mayu:
         return h
     
     
+    # エラー時
+    def error_mes(self):
+        mes = "エラーが起きました…\n考えられる原因:\n・文字数オーバー\n・検索対象ツイートが削除された\nなど…"
+        post_tweet_reply(self.from_id, self.tw_id, mes)
+        
+        return True
+        
+    
+    
     # 借金登録
     def add_debt(self):
+        
+        if len(self.text) > 100:
+            self.error_mes()
+            return True
         
         if "ID:" in self.text:
             mes = "登録できない文字列が含まれているみたいです…"
@@ -393,8 +407,60 @@ class Mayu:
             tmp = search_df.iloc[i]
             mes = mes + "https://twitter.com/"+tmp.from_id.replace("@", "")+"/status/"+str(tmp.tweet_id)+"\n"
             
-        return mes
+        if mes != "":
+            mes = "これですかぁ？\n" + mes
+        else:
+            mes = "指定の検索ワードでの登録は見つかりませんでした…"
         
+        post_tweet_reply(self.from_id, self.tw_id, mes)
+        
+        return True
+    
+    # 一覧の画像を返す
+    def return_all_list(self, msg):
+        f = []
+        if len(msg.split("\n")) > 24:
+            half = "\n".join(msg.split("\n")[:23])+"\n\n(続)"
+            a = open(make_image(half, "all_list"), "rb")
+            f.append(a)
+            half = "\n".join(msg.split("\n")[23:])
+            b = open(make_image(half, "all_list"), "rb")
+            f.append(b)
+        else:
+            a = open(make_image(msg, "all_list"), "rb")
+            f.append(a)
+            b = open(make_image(msg, "all_list"), "rb")
+            
+        images = f
+        mes = "どうぞ♡"
+        media_ids = get_media_ids(images)
+        a.close()
+        b.close()
+        post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
+        
+        return True
+    
+    
+    # 差額結果を返す
+    def return_diff_price(self, member):
+        # all_id は、差額対象ツイ全部のID
+        msg, all_id = self.calc_diff_price(member)
+        if all_id == "":
+            all_id = "なし"
+        f = open(make_image(msg, "diff_price"), "rb")
+        images = [f]
+        mes = ".@"+mem+" さんとの差額です♡\nID: "+all_id
+        media_ids = get_media_ids(images)
+        f.close()
+        
+        if len(mes) > 130:
+            self.error_mes()
+        else:
+            post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
+        
+        return True
+        
+
     
     # あいさつ
     def greet(self):
@@ -463,94 +529,27 @@ class Mayu:
             # 検索
             if "検索" in self.text:
                 w = self.text.split("検索")[1]
-                search_list = self.search_word(w)
-                mes = "これですかぁ？\n"+search_list
-                if search_list == "":
-                    mes = "指定の検索ワードでの登録は見つかりませんでした…"
-
-                post_tweet_reply(self.from_id, self.tw_id, mes)
+                self.search_word(w)
                 return True
 
             # 一覧を出す
             if "一覧" in self.text:
                 msg = self.get_all_list()
-                f = []
-                if len(msg.split("\n")) > 24:
-                    half = "\n".join(msg.split("\n")[:23])+"\n\n(続)"
-                    a = open(make_image(half, "all_list"), "rb")
-                    f.append(a)
-                    half = "\n".join(msg.split("\n")[23:])
-                    b = open(make_image(half, "all_list"), "rb")
-                    f.append(b)
-                else:
-                    a = open(make_image(msg, "all_list"), "rb")
-                    f.append(a)
-                    b = open(make_image(msg, "all_list"), "rb")
-                images = f
-                mes = "どうぞ♡"
-                media_ids = get_media_ids(images)
-                a.close()
-                b.close()
-                post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
+                self.return_all_list(msg)
                 return True
 
             # 差額を出す
             if "差額" in self.text:
                 
+                # 差額相手がリプライに含まれてない場合
                 if len(self.member) == 0:
                     self.random_reply()
-                    return True
-
-                for mem in self.member:
-                    # all_id は、差額対象ツイ全部のID
-                    msg, all_id = self.calc_diff_price(mem)
-                    if all_id == "":
-                        all_id = "なし"
-                    f = open(make_image(msg, "diff_price"), "rb")
-                    images = [f]
-                    mes = ".@"+mem+" さんとの差額です♡\nID: "+all_id
-                    media_ids = get_media_ids(images)
-                    f.close()
-                    
-                    post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
+                else:
+                    for mem in self.member:
+                        self.return_diff_price(mem)
                 
                 return True
                         
-                
-#             # おみくじ10連
-#             if  "10連" in self.text:
-#                 mes = "@"+self.from_id+" "
-#                 for i in range(10):
-#                     mes = mes+omikuji()+"\n"
-
-#                 if "大吉" in mes:
-#                     mayu_pictures =  os.listdir("../data/Mayu_pic/")
-#                     filepath = random.choice(mayu_pictures)
-#                     self.api.update_with_media(status=mes, in_reply_to_status_id=self.tw_id, filename=filepath)
-#                 else:
-#                     self.api.update_status(status=mes, in_reply_to_status_id=self.tw_id)
-
-#                 return True
-
-#             # おみくじ 
-#             if "おみくじ" in self.text:
-#                 mes = "@"+self.from_id+" "+omikuji()
-#                 self.api.update_status(status=mes, in_reply_to_status_id=self.tw_id)
-#                 return True
-
-#             if "大吉" in self.text:
-#                 mes = "@"+self.from_id+" 大吉です♪"
-#                 mayu_pictures =  os.listdir("../data/Mayu_pic/")
-#                 filepath = random.choice(mayu_pictures)
-#                 self.api.update_with_media(status=mes, in_reply_to_status_id=self.tw_id, filename=filepath)
-#                 return True
-
-#             # ららマジ
-#             if "ららマジ" in self.text:
-#                 mes = "@"+self.from_id+" "+rara_magi()
-#                 self.api.update_status(status=mes, in_reply_to_status_id=self.tw_id)
-#                 return True
-
             # ヘルプ
             if ("ヘルプ" in self.text) or ("使い方" in self.text) or ("how to" in self.text) or ("help" in self.text):
                 mes = "参照してください♡\nhttps://twitter.com/otaku_shakkin/status/931263861742649344"
@@ -582,7 +581,7 @@ class Mayu:
     
     # ランダムにリプライ
     def random_reply(self):
-        with open("/Users/Shota/Documents/jupyter/otaku_shakkin_chang/data/Mayu_words.txt", "r") as f:
+        with open("../data/Mayu_words.txt", "r") as f:
             lines = f.readlines()
             Mayu_words_db = list(map(lambda x:x.replace("\n", ""), lines))
 
@@ -618,3 +617,8 @@ class Mayu:
                 self.monitor_TL()
             
         return True
+    
+    
+# ツイートの raw data の例
+# ここの text を変えてインスタンス化すればいろいろ挙動を試せる
+tweeet_raw_data_example = "{'contributors': None, 'coordinates': None, 'created_at': 'Sat Jun 23 01:57:14 +0000 2018', 'entities': {'hashtags': [], 'symbols': [], 'urls': [], 'user_mentions': [{'id': 1007928395508867073, 'id_str': '1007928395508867073', 'indices': [0, 11], 'name': 'lambda_test_account', 'screen_name': 'TestLambda'}, {'id': 1007928395508867073, 'id_str': '1007928395508867073', 'indices': [12, 23], 'name': 'lambda_test_account', 'screen_name': 'TestLambda'}]}, 'favorite_count': 0, 'favorited': False, 'geo': None, 'id': 1010340977217712128, 'id_str': '1010340977217712128', 'in_reply_to_screen_name': 'TestLambda', 'in_reply_to_status_id': 1010340975678373888, 'in_reply_to_status_id_str': '1010340975678373888', 'in_reply_to_user_id': 1007928395508867073, 'in_reply_to_user_id_str': '1007928395508867073', 'is_quote_status': False, 'lang': 'ja', 'place': None, 'retweet_count': 0, 'retweeted': False, 'source': 'Pさんのお部屋', 'text': '@TestLambda @TestLambda まゆですよぉ', 'truncated': False, 'user': {'contributors_enabled': False, 'created_at': 'Mon Nov 06 17:34:38 +0000 2017', 'default_profile': True, 'default_profile_image': False, 'description': '借金を管理しますよぉ？ #オタク借金 ※使い方は固定ツイートを参照してください。', 'entities': {'description': {'urls': []}}, 'favourites_count': 0, 'follow_request_sent': False, 'followers_count': 10, 'following': False, 'friends_count': 10, 'geo_enabled': False, 'has_extended_profile': False, 'id': 927590059028578304, 'id_str': '927590059028578304', 'is_translation_enabled': False, 'is_translator': False, 'lang': 'ja', 'listed_count': 0, 'location': '', 'name': 'オタク借金ちゃん', 'notifications': False, 'profile_background_color': 'F5F8FA', 'profile_background_image_url': None, 'profile_background_image_url_https': None, 'profile_background_tile': False, 'profile_banner_url': 'https://pbs.twimg.com/profile_banners/927590059028578304/1510864815', 'profile_image_url': 'http://pbs.twimg.com/profile_images/992913136884662272/3yBTiZnf_normal.jpg', 'profile_image_url_https': 'https://pbs.twimg.com/profile_images/992913136884662272/3yBTiZnf_normal.jpg', 'profile_link_color': '1DA1F2', 'profile_sidebar_border_color': 'C0DEED', 'profile_sidebar_fill_color': 'DDEEF6', 'profile_text_color': '333333', 'profile_use_background_image': True, 'protected': True, 'screen_name': 'otaku_shakkin', 'statuses_count': 1173, 'time_zone': None, 'translator_type': 'none', 'url': None, 'utc_offset': None, 'verified': False}}"
