@@ -88,6 +88,12 @@ class Mayu:
     # 借金登録
     def add_debt(self):
         
+        if "ID:" in self.text:
+            mes = "登録できない文字列が含まれているみたいです…"
+            post_tweet_reply(self.from_id, self.tw_id, mes)
+            return True
+            
+        
         for mem in self.member:
             lender_id = self.from_id
             borrower_id = mem
@@ -433,9 +439,9 @@ class Mayu:
     
     def reply_specific_word(self):
         
-        if "再起動" in self.text:
-            # エラーを起こす
-            1/0
+        # if "再起動" in self.text:
+        #     # エラーを起こす
+        #     1/0
             
             
         try:
@@ -599,13 +605,16 @@ class Mayu:
             
             # 特定ワードに反応させる
             if self.reply_specific_word():
+                # print("specific")
                 return True
             else:
+                # print("random")
                 self.random_reply()
                 return True
                 
         else:
             if not self.is_conversation:
+                # print("TL monitor")
                 self.monitor_TL()
             
         return True
