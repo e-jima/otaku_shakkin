@@ -1,0 +1,11 @@
+2018-06-23 10:56:19.772510
+==========
+
+Traceback (most recent call last):
+  File "<ipython-input-2-4e5dacaadd2d>", line 6, in <module>
+    roop()
+  File "<ipython-input-1-40f40ee61f1a>", line 30, in roop
+    print("i=", i)
+NameError: name 'i' is not defined
+
+==========
