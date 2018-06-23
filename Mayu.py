@@ -9,6 +9,7 @@ import json
 import ast
 import datetime
 import time
+import json
 import re
 import random
 import traceback
@@ -621,4 +622,5 @@ class Mayu:
     
 # ツイートの raw data の例
 # ここの text を変えてインスタンス化すればいろいろ挙動を試せる
-tweeet_raw_data_example = "{'contributors': None, 'coordinates': None, 'created_at': 'Sat Jun 23 01:57:14 +0000 2018', 'entities': {'hashtags': [], 'symbols': [], 'urls': [], 'user_mentions': [{'id': 1007928395508867073, 'id_str': '1007928395508867073', 'indices': [0, 11], 'name': 'lambda_test_account', 'screen_name': 'TestLambda'}, {'id': 1007928395508867073, 'id_str': '1007928395508867073', 'indices': [12, 23], 'name': 'lambda_test_account', 'screen_name': 'TestLambda'}]}, 'favorite_count': 0, 'favorited': False, 'geo': None, 'id': 1010340977217712128, 'id_str': '1010340977217712128', 'in_reply_to_screen_name': 'TestLambda', 'in_reply_to_status_id': 1010340975678373888, 'in_reply_to_status_id_str': '1010340975678373888', 'in_reply_to_user_id': 1007928395508867073, 'in_reply_to_user_id_str': '1007928395508867073', 'is_quote_status': False, 'lang': 'ja', 'place': None, 'retweet_count': 0, 'retweeted': False, 'source': 'Pさんのお部屋', 'text': '@TestLambda @TestLambda まゆですよぉ', 'truncated': False, 'user': {'contributors_enabled': False, 'created_at': 'Mon Nov 06 17:34:38 +0000 2017', 'default_profile': True, 'default_profile_image': False, 'description': '借金を管理しますよぉ？ #オタク借金 ※使い方は固定ツイートを参照してください。', 'entities': {'description': {'urls': []}}, 'favourites_count': 0, 'follow_request_sent': False, 'followers_count': 10, 'following': False, 'friends_count': 10, 'geo_enabled': False, 'has_extended_profile': False, 'id': 927590059028578304, 'id_str': '927590059028578304', 'is_translation_enabled': False, 'is_translator': False, 'lang': 'ja', 'listed_count': 0, 'location': '', 'name': 'オタク借金ちゃん', 'notifications': False, 'profile_background_color': 'F5F8FA', 'profile_background_image_url': None, 'profile_background_image_url_https': None, 'profile_background_tile': False, 'profile_banner_url': 'https://pbs.twimg.com/profile_banners/927590059028578304/1510864815', 'profile_image_url': 'http://pbs.twimg.com/profile_images/992913136884662272/3yBTiZnf_normal.jpg', 'profile_image_url_https': 'https://pbs.twimg.com/profile_images/992913136884662272/3yBTiZnf_normal.jpg', 'profile_link_color': '1DA1F2', 'profile_sidebar_border_color': 'C0DEED', 'profile_sidebar_fill_color': 'DDEEF6', 'profile_text_color': '333333', 'profile_use_background_image': True, 'protected': True, 'screen_name': 'otaku_shakkin', 'statuses_count': 1173, 'time_zone': None, 'translator_type': 'none', 'url': None, 'utc_offset': None, 'verified': False}}"
+with open("../data/tweet_raw_data_example.json", "r") as f:
+    tweeet_raw_data_example = json.load(f)
