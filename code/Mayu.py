@@ -450,7 +450,7 @@ class Mayu:
             all_id = "なし"
         f = open(make_image(msg, "diff_price"), "rb")
         images = [f]
-        mes = ".@"+mem+" さんとの差額です♡\nID: "+all_id
+        mes = ".@"+member+" さんとの差額です♡\nID: "+all_id
         media_ids = get_media_ids(images)
         f.close()
         
