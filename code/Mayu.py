@@ -2,6 +2,7 @@
 
 from functions import *
 from twitter import *
+from Mayu_bot import *
 
 
 import pandas as pd
@@ -552,7 +553,7 @@ class Mayu:
                 return True
                         
             # ヘルプ
-            if ("ヘルプ" in self.text) or ("使い方" in self.text) or ("how to" in self.text) or ("help" in self.text):
+            if ("ヘルプ" in self.text) or ("使い方" in self.text) or ("how to" in self.text) or ("help" in self.text) or ("Help" in self.text):
                 mes = "参照してください♡\nhttps://twitter.com/otaku_shakkin/status/931263861742649344"
                 post_tweet_reply(self.from_id, self.tw_id, mes)
                 return True
@@ -562,10 +563,10 @@ class Mayu:
             if self.greet():
                 return True
             
+            # リプライ時の「まゆ」には反応しない
             # まゆが含まれてたら「まゆですよぉ」
-            if self.hey_Mayu():
-                return True
-            
+            # if self.hey_Mayu():
+                # return True
             
             # どれにも一致しなかったら false 
             return False
@@ -588,8 +589,20 @@ class Mayu:
 
         mes = random.choice(Mayu_words_db)
         post_tweet_reply(self.from_id, self.tw_id, mes)
+        
+      
+    # マルコフ連鎖 + word2vec で会話
+    def conversation(self):
+        mayuchan = Mayu_conversation_bot(self.user_name)
+        # 何パターン文章をつくるか
+        m = 70
+        mes = mayuchan.conversation(self.text, m)
+        while len(mes) > 110:
+            mes = mayuchan.conversation(self.text, m)
+            
+        post_tweet_reply(self.from_id, self.tw_id, mes)
+        
 
- 
     # TL に流れてる単語で反応するやつ
     def monitor_TL(self):
         if self.greet():
@@ -609,7 +622,8 @@ class Mayu:
                 return True
             else:
                 # print("random")
-                self.random_reply()
+                # self.random_reply()
+                self.conversation()
                 return True
                 
         else:
