@@ -131,8 +131,10 @@ class Mayu:
             if price.isdigit():
                 price = "{:,}".format(int(price))
             content = self.text.split("円")[-1]
+            if price == "":
+                price = "nullですよぉ"
             if content == "":
-                content = "null"
+                content = "nullですよぉ"
             rh = self.get_random_hash()
             if self.is_reverse:
                 mes = "登録完了です！(逆登録)\n"
