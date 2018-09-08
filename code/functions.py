@@ -21,7 +21,7 @@ def back_up_df():
 def make_image(msg, use):
     base_image = Image.open("../images/base.png")
     draw = ImageDraw.Draw(base_image)
-    f_size = 20
+    f_size = 30
     b = (0, 0, 0)
     font = ImageFont.truetype("/Library/Fonts/ipaexg.ttf", f_size, encoding='utf-8')
 
@@ -33,6 +33,8 @@ def make_image(msg, use):
         filepath = "../images/all_list/"+now+".png"
     elif use == "diff_price":
         filepath = "../images/diff_price/"+now+".png"
+    elif use == "eveno":
+        filepath = "../images/eveno/"+now+".png"
     else:
         # とりあえず all list の方を返しとく
         filepath = "../images/all_list/"+now+".png"

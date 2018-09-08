@@ -14,6 +14,11 @@ import json
 import re
 import random
 import traceback
+import urllib
+import re
+
+from bs4 import BeautifulSoup
+from dateutil.relativedelta import relativedelta
 
 
 # 借金リストのパス
@@ -423,11 +428,11 @@ class Mayu:
     # 一覧の画像を返す
     def return_all_list(self, msg):
         f = []
-        if len(msg.split("\n")) > 24:
-            half = "\n".join(msg.split("\n")[:23])+"\n\n(続)"
+        if len(msg.split("\n")) > 45:
+            half = "\n".join(msg.split("\n")[:44])+"\n\n(続)"
             a = open(make_image(half, "all_list"), "rb")
             f.append(a)
-            half = "\n".join(msg.split("\n")[23:])
+            half = "\n".join(msg.split("\n")[44:])
             b = open(make_image(half, "all_list"), "rb")
             f.append(b)
         else:
@@ -463,8 +468,66 @@ class Mayu:
             post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
         
         return True
-        
+    
+    # イベノからイベント詳細を探してくる
+    def search_events(self, w):
+        root_url = "https://www.eventernote.com/events/search?keyword="
 
+        keyword = w
+        # 空白系を + に変換
+        keyword = "+".join(keyword.split())
+        # ascii に変換
+        keyword = urllib.parse.quote(keyword, safe="+")
+
+        now= datetime.datetime.now()
+        year_month = [now+relativedelta(months=i) for i in range(6)]
+        weekday = ["月", "火", "水", "木", "金", "土", "日"]
+
+        lines = "===\n"
+        for ym in year_month:
+            lines += str(ym.year)+"年"+str(ym.month)+"月\n\n"
+            url = root_url+keyword+"&year="+str(ym.year)+"&month="+str(ym.month)+"&day=&area_id=&prefecture_id="
+
+            req = urllib.request.Request(url)
+            page = urllib.request.urlopen(req)
+            soup = BeautifulSoup(page)
+
+            events = soup.find_all("div", "event")
+            dates = [re.findall(r'\">(.+?)<', str(x))[0].replace(" (", "") for x in soup.find_all("p", re.compile(r'day\d'))]
+
+            for d, e in zip(reversed(dates), reversed(events)):
+                d = datetime.datetime.strptime(d, "%Y-%m-%d")
+                title = re.findall(r'\">(.+?)<', str(e.find_all("h4")))
+                place_time = re.findall(r'\">(.+?)<', str(e.find_all("div", "place")))
+                lines += "  "+str(d.month)+"."+str(d.day)+"("+weekday[d.weekday()]+") @ "+" ( ".join(place_time)+" )\n"
+                lines += "    "+title[0]+"\n\n"
+            if len(events) == 0:
+                lines += "    なし\n\n"
+            lines += "===\n"
+
+            
+        f = []
+        if len(lines.split("\n")) > 45:
+            half = "\n".join(lines.split("\n")[:44])+"\n\n(続)"
+            a = open(make_image(half, "eveno"), "rb")
+            f.append(a)
+            half = "\n".join(lines.split("\n")[44:])
+            b = open(make_image(half, "eveno"), "rb")
+            f.append(b)
+        else:
+            a = open(make_image(lines, "eveno"), "rb")
+            f.append(a)
+            b = open(make_image(lines, "eveno"), "rb")
+            
+        images = f
+        mes = "どうぞ♡"
+        media_ids = get_media_ids(images)
+        a.close()
+        b.close()
+        post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
+        
+        return True
+        
     
     # あいさつ
     def greet(self):
@@ -499,6 +562,8 @@ class Mayu:
             mes = " ちがう人ですねぇ……？"
         if "まゆるど" in self.text:
             mes = "もう…ちゃんと\"まゆ\"って呼んでくださいっ"
+        if "しいなまゆり" in self.text:
+            mes = "トゥットゥルー♪"
             
         if mes != "":
             post_tweet_reply(self.from_id, self.tw_id, mes)
@@ -515,6 +580,11 @@ class Mayu:
             
             
         try:
+            
+#             if "おめでとう" in self.text:
+#                 post_tweet_reply(self.from_id, self.tw_id, "ありがとうございます♡\n"+self.user_name+"さんにお祝いしてもらえて、まゆ、うれしい…")
+#                 return True
+                
             
             # 登録が一番優先度高い
             if "円" in self.text:
@@ -553,7 +623,13 @@ class Mayu:
                         self.return_diff_price(mem)
                 
                 return True
-                        
+            
+            if "イベント" in self.text:
+                idx = self.text.find("イベント")
+                w = self.text[idx+4:]
+                self.search_events(w)
+                return True
+                
             # ヘルプ
             if ("ヘルプ" in self.text) or ("使い方" in self.text) or ("how to" in self.text) or ("help" in self.text) or ("Help" in self.text):
                 mes = "参照してください♡\nhttps://twitter.com/otaku_shakkin/status/931263861742649344"
