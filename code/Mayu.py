@@ -21,6 +21,22 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 
+# google drive 関係
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
+gauth = GoogleAuth(settings_file="../../mega_chan/secret/settings.yaml")
+gauth.LoadCredentialsFile("../../mega_chan/secret/credentials.json")
+if gauth.credentials is None:
+    gauth.CommandLineAuth()
+elif gauth.access_token_expired:
+    gauth.Refresh()
+else:
+    gauth.Authorize()
+gauth.SaveCredentialsFile("../../mega_chan/secret/credentials.json")
+drive = GoogleDrive(gauth)
+
+
 # 借金リストのパス
 path = "../shakkin_list/shakkin_list.csv"
 bot_id = "otaku_shakkin"
@@ -95,7 +111,7 @@ class Mayu:
     
     # エラー時
     def error_mes(self):
-        mes = "エラーが起きました…\n考えられる原因:\n・文字数オーバー\n・検索対象ツイートが削除された\nなど…"
+        mes = "エラーが起きました…\n考えられる原因:\n・文字数オーバー\n・検索対象ツイートが削除された\n・API 制限\nなど… @lambda_nn"
         post_tweet_reply(self.from_id, self.tw_id, mes)
         
         return True
@@ -132,10 +148,11 @@ class Mayu:
             # バックアップ
             back_up_df()
 
-            price = self.text.split("円")[0]
+            yen_split = selt.text.split("円")
+            price = yen_split[0]
             if price.isdigit():
                 price = "{:,}".format(int(price))
-            content = self.text.split("円")[-1]
+            content = "".join(yen_split[1:])
             if price == "":
                 price = "nullですよぉ"
             if content == "":
@@ -150,8 +167,8 @@ class Mayu:
 
             # 返信ツイートの ID を取得
             reply_id = get_user_timeline("otaku_shakkin", 10)[0]["id_str"]
-            # columns = [u'date', u'tweet_id', u'from_id', u'reply_id', u'id', u'price', u'content', u'lender', u'borrower', u'done']
-            row = pd.DataFrame([[self.tw_date, self.tw_id, "@"+self.from_id, reply_id, rh, price, content, "@"+lender_id, "@"+borrower_id, 0]], columns=self.columns)
+            # columns = [u'date', u'tweet_id', u'from_id', u'reply_id', u'id', u'price', u'content', u'lender', u'borrower', u'done_date', u'done']
+            row = pd.DataFrame([[self.tw_date, self.tw_id, "@"+self.from_id, reply_id, rh, price, content, "@"+lender_id, "@"+borrower_id, -1, 0]], columns=self.columns)
             self.df = self.df.append(row, ignore_index=True)
 
         self.df.to_csv(path, encoding="utf-8", index=False)
@@ -193,6 +210,7 @@ class Mayu:
         # その借金の貸し借りに関わっている人しか完了できない
         if list(update_row["borrower"] == "@"+self.from_id)[0] or list(update_row["lender"] == "@"+self.from_id)[0]:
             self.df.loc[self.df.id == done_id, "done"] = 1
+            self.df.loc[self.df.id == done_id, "done_date"] = str(datetime.datetime.now())
             self.df.to_csv(path, encoding="utf-8", index=False)
             if update_row["borrower"].item() == "@"+self.from_id:
                 mes = update_row["lender"].item()+" 更新完了です！"
@@ -262,6 +280,7 @@ class Mayu:
                 return True
                 
             self.df.loc[self.df.id == done_id, "done"] = 1
+            self.df.loc[self.df.id == done_id, "done_date"] = str(datetime.datetime.now())
             post_tweet_reply(bot_id, reply_id, "これは更新されました♡\n"+str(datetime.datetime.now()))
 
         self.df.to_csv(path, encoding="utf-8", index=False)
@@ -527,8 +546,71 @@ class Mayu:
         post_tweet_reply_with_media(media_ids, self.from_id, self.tw_id, mes)
         
         return True
-        
     
+    # 全履歴を計算
+    def return_history(self, u):
+        users_key = dict()
+
+        with open("./secret/users_key.json", "r") as f:
+            users_key = json.load(f)
+
+        text = "最終更新: "+str(datetime.datetime.now()).split(".")[0]+"\n"+"-"*50+"\n\n"
+        d = self.df[(self.df.borrower==u).values | (self.df.lender==u).values]
+        if u in users_key:
+            file = drive.CreateFile({"id": users_key[u]})
+            
+            for row in d[["date", "lender", "borrower", "content", "price", "done_date", "done"]].values:
+                is_not_done = ""
+                if row[6] == 0:
+                    is_not_done = "* "
+                    text += "*"*50+"\n*\n"
+
+                text += is_not_done+str(row[0])+"\n"
+                text += is_not_done+"  "+row[1]+" から "+row[2]+" へ\n"
+                text += is_not_done+"    "+str(row[3])+" : "+str(row[4])+" 円 → "
+                if row[6] == 1:
+                    text += "done! ( "+str(row[5]).split(".")[0]+" )\n"
+                else:
+                    text += "NOT done\n*\n"
+                    text += "*"*50+"\n"
+                text += "\n"
+
+            file.SetContentString(text)
+            file.Upload()
+
+            return file["id"]
+
+        else:
+            file = drive.CreateFile({"parents": [{"id": "19v1i1f8bFv1grVakVCYhcsmIVfY7-BF7"}], 
+                          "title": u+".txt"})        
+            
+            for row in d[["date", "lender", "borrower", "content", "price", "done_date", "done"]].values:
+                is_not_done = ""
+                if row[6] == 0:
+                    is_not_done = "* "
+                    text += "*"*50+"\n*\n"
+
+                text += is_not_done+str(row[0])+"\n"
+                text += is_not_done+"  "+row[1]+" から "+row[2]+" へ\n"
+                text += is_not_done+"    "+str(row[3])+" : "+str(row[4])+" 円 → "
+                if row[6] == 1:
+                    text += "done! ( "+str(row[5]).split(".")[0]+" )\n"
+                else:
+                    text += "NOT done\n*\n"
+                    text += "*"*50+"\n"
+                text += "\n"
+
+            file.SetContentString(text)
+            file.Upload()
+
+            files = drive.ListFile().GetList()
+            for file in files:
+                if file["title"] == u+".txt":
+                    users_key[u] = file["id"]
+            with open("./secret/users_key.json", "w") as f:
+                print(json.dumps(users_key), file=f, end="")
+        
+        
     # あいさつ
     def greet(self):
         mes = ""
@@ -562,7 +644,7 @@ class Mayu:
             mes = " ちがう人ですねぇ……？"
         if "まゆるど" in self.text:
             mes = "もう…ちゃんと\"まゆ\"って呼んでくださいっ"
-        if "しいなまゆり" in self.text:
+        if "しいなまゆり" in self.text or "まゆしぃ" in self.text:
             mes = "トゥットゥルー♪"
             
         if mes != "":
@@ -611,6 +693,14 @@ class Mayu:
                 msg = self.get_all_list()
                 self.return_all_list(msg)
                 return True
+            
+            # 全履歴
+            if "全履歴" in self.text:
+                self.return_history("@"+self.from_id)
+                msg = "参照してください♡\nhttps://drive.google.com/drive/u/2/folders/19v1i1f8bFv1grVakVCYhcsmIVfY7-BF7"
+                post_tweet_reply(self.from_id, self.tw_id, msg)
+                return True
+                
 
             # 差額を出す
             if "差額" in self.text:
@@ -650,6 +740,7 @@ class Mayu:
             return False
 
         except:
+            self.error_mes()
             with open("../error.log", "r") as f:
                 l = f.readlines()
                 l = str(datetime.datetime.now()) + "\n==========\n\n" + str(traceback.format_exc()) +"\n==========\n\n\n\n" + "".join(l)
