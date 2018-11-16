@@ -148,7 +148,7 @@ class Mayu:
             # バックアップ
             back_up_df()
 
-            yen_split = selt.text.split("円")
+            yen_split = self.text.split("円")
             price = yen_split[0]
             if price.isdigit():
                 price = "{:,}".format(int(price))
