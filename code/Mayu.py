@@ -201,6 +201,11 @@ class Mayu:
             self.random_reply()
             return False
         
+        # 差額に済はだめ
+        if "差額" in tw_in_rep["text"]:
+            self.random_reply()
+            return False
+            
         # バックアップ
         back_up_df()
 
@@ -663,9 +668,9 @@ class Mayu:
             
         try:
             
-#             if "おめでとう" in self.text:
-#                 post_tweet_reply(self.from_id, self.tw_id, "ありがとうございます♡\n"+self.user_name+"さんにお祝いしてもらえて、まゆ、うれしい…")
-#                 return True
+            if "おめで" in self.text or "happy" in self.text.lower():
+                post_tweet_reply(self.from_id, self.tw_id, "ありがとうございます♡\n"+self.user_name+"さんにお祝いしてもらえて、まゆ、うれしい…\nこれからもよろしくお願いします♪")
+                return True
                 
             
             # 登録が一番優先度高い
